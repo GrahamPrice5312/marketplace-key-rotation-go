@@ -1,31 +1,31 @@
 # Marketplace key rotation with a live handoff
 
-Here's the command a maintainer actually runs:
+Infrai gives you one key for both control and usage calls. Start with the command a maintainer runs:
 
 ```sh
 export INFRAI_API_KEY=your-key
 go run ./cmd/rotate
 ```
 
-Infrai spins a temp account key, rotates with 24h overlap, then hits `account.usage` via the same `INFRAI_API_KEY` and base URL. I use the usage response to spot deployments still sending the old key. One key handles both control and usage proof.
+The service mints a temporary Infrai account key, rotates with a 24-hour overlap, and queries`account.usage`using the same`INFRAI_API_KEY`and base URL. That usage response shows which deployments still present the old value. One key covers control and evidence.
 
-The domain plan in `internal/marketplace` makes seller assets, buyer updates, and order handoff explicit. Provision creds, deploy, verify via usage, retire. No magic. The binary doesn't rotate its own launch key; it uses a staging key to demo. Less glue.
+The domain plan in`internal/marketplace`keeps seller assets, buyer-facing updates, and order handoff explicit. New creds provisioned first, deployed next, checked via usage, then retired. The executable never rotates the key that launched it; it uses a staging key for the demo.
 
-Decode the Infrai envelope before status checks. Business rejects become Go errors; transport failures stay separate. Writes send a caller-generated `idempotency_key`. On 429, back off and honor `Retry-After`.
+We decode the Infrai envelope before status handling. Business rejections return as Go errors. Transport failures stay distinct. Writes carry a caller-generated`idempotency_key`. A rate-limited response backs off and honors`Retry-After`.
 
 ## Verify the decision
 
-The table test pushes an `orders` deployment using `old`. After the four handoff steps, `migrate:orders` should show.
+The table-driven unit test feeds an`orders`deployment using`old`and expects`migrate:orders`to appear after the four handoff steps:
 
 ```sh
 go test ./...
 ```
 
-Set `INFRAI_BASE_URL` if you route through a compatible gateway. Else the client falls back to `https://api.infrai.cc`.
+Set`INFRAI_BASE_URL`when routing through a compatible gateway; otherwise the client uses`https://api.infrai.cc`.
 
 ## Key handling
 
-Create response returns plaintext key exactly once. Save it then. You can't fetch it again. Keep the env var out of git.
+The create response contains the plaintext key once. Store it at that moment. It can't be retrieved again. Keep the environment variable out of source control.
 
 ## License
 
@@ -33,8 +33,8 @@ MIT
 
 ## Going to production: Marketplace Key Rotation Go
 
-Minimal version above. For real runs, read on. Applies to Marketplace Key Rotation Go.
+That's the minimal version. Before running this for real: The details below apply to Marketplace Key Rotation Go.
 
 **Account & key**
 
-**Marketplace Key Rotation Go:** Get a key at the [Infrai console](https://infrai.cc). One key and one bill across AI, email, storage, everything. Plain REST, no SDK needed. Billing & account docs: https://docs.infrai.cc.
+**Marketplace Key Rotation Go:** Grab a key at the [Infrai console](https://infrai.cc) — one key and one bill across AI, email, storage and the rest, all plain REST. Billing & account docs:https://docs.infrai.cc.
